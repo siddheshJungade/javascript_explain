@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JavaScript Hoisting Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .demo-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .demo-section {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .demo-section:hover {
+            transform: translateY(-5px);
+        }
+        
+        .section-title {
+            color: #667eea;
+            font-size: 1.4em;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .code-block {
+            background: #1e1e1e;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+        
+        .code {
+            color: #f8f8f2;
+            font-family: 'Courier New', monospace;
+            line-height: 1.6;
+            white-space: pre;
+            font-size: 14px;
+        }
+        
+        .keyword { color: #ff79c6; }
+        .function { color: #50fa7b; }
+        .string { color: #f1fa8c; }
+        .comment { color: #6272a4; }
+        .number { color: #bd93f9; }
+        .error { color: #ff5555; }
+        
+        .output {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        
+        .output.error {
+            background: #ffe6e6;
+            border-color: #ff9999;
+            color: #cc0000;
+        }
+        
+        .output.success {
+            background: #e6ffe6;
+            border-color: #99ff99;
+            color: #006600;
+        }
+        
+        .phase-container {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        
+        .phase-title {
+            color: #667eea;
+            font-size: 1.6em;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .phases {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        .phase {
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            padding: 20px;
+            background: #f8f9ff;
+        }
+        
+        .phase h4 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+        
+        .memory-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .memory-table th, .memory-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .memory-table th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .memory-table tr:hover {
+            background: #f5f5f5;
+        }
+        
+        .hoisting-types {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .type-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            border-left: 5px solid;
+        }
+        
+        .type-card.var { border-left-color: #ff6b6b; }
+        .type-card.let { border-left-color: #4ecdc4; }
+        .type-card.const { border-left-color: #45b7d1; }
+        .type-card.function { border-left-color: #96ceb4; }
+        .type-card.arrow { border-left-color: #ffeaa7; }
+        
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 10px 5px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        .interactive-demo {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 30px 0;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        
+        .controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        @media (max-width: 768px) {
+            .demo-grid, .phases {
+                grid-template-columns: 1fr;
+            }
+            
+            .hoisting-types {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎭 JavaScript Hoisting</h1>
+            <p>Understanding how variables and functions are hoisted in JavaScript</p>
+        </div>
+        
+        <!-- Memory Phases -->
+        <div class="phase-container">
+            <div class="phase-title">🧠 How Hoisting Works: Memory vs Execution Phases</div>
+            <div class="phases">
+                <div class="phase">
+                    <h4>📝 Memory Creation Phase</h4>
+                    <p>Before any code execution:</p>
+                    <table class="memory-table">
+                        <thead>
+                            <tr>
+                                <th>Variable/Function</th>
+                                <th>Initial Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>var x</code></td>
+                                <td><code>undefined</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>let y</code></td>
+                                <td><code>uninitialized</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>const z</code></td>
+                                <td><code>uninitialized</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>function foo()</code></td>
+                                <td><code>complete function</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>var bar = () => {}</code></td>
+                                <td><code>undefined</code></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="phase">
+                    <h4>⚡ Code Execution Phase</h4>
+                    <p>Line by line execution:</p>
+                    <ul style="list-style-type: none; padding: 0;">
+                        <li style="margin: 10px 0; padding: 10px; background: #f0f8ff; border-radius: 4px;">
+                            1️⃣ <code>var</code> assignments happen
+                        </li>
+                        <li style="margin: 10px 0; padding: 10px; background: #f0f8ff; border-radius: 4px;">
+                            2️⃣ <code>let/const</code> enter scope
+                        </li>
+                        <li style="margin: 10px 0; padding: 10px; background: #f0f8ff; border-radius: 4px;">
+                            3️⃣ Functions are already available
+                        </li>
+                        <li style="margin: 10px 0; padding: 10px; background: #f0f8ff; border-radius: 4px;">
+                            4️⃣ Arrow functions get assigned
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Hoisting Types -->
+        <div class="hoisting-types">
+            <div class="type-card var">
+                <h3>🔴 var Hoisting</h3>
+                <div class="code-block">
+                    <div class="code"><span class="comment">// What you write:</span>
+console.log(x); <span class="comment">// undefined (not error!)</span>
+<span class="keyword">var</span> x = <span class="number">5</span>;
+
+<span class="comment">// How JavaScript sees it:</span>
+<span class="keyword">var</span> x; <span class="comment">// hoisted, x = undefined</span>
+console.log(x); <span class="comment">// undefined</span>
+x = <span class="number">5</span>; <span class="comment">// assignment happens here</span></div>
+                </div>
+            </div>
+            
+            <div class="type-card let">
+                <h3>🟡 let Hoisting</h3>
+                <div class="code-block">
+                    <div class="code"><span class="comment">// What you write:</span>
+console.log(y); <span class="error">// ReferenceError!</span>
+<span class="keyword">let</span> y = <span class="number">10</span>;
+
+<span class="comment">// Temporal Dead Zone:</span>
+<span class="comment">// y exists in memory but</span>
+<span class="comment">// cannot be accessed before declaration</span></div>
+                </div>
+            </div>
+            
+            <div class="type-card const">
+                <h3>🔵 const Hoisting</h3>
+                <div class="code-block">
+                    <div class="code"><span class="comment">// What you write:</span>
+console.log(z); <span class="error">// ReferenceError!</span>
+<span class="keyword">const</span> z = <span class="number">15</span>;
+
+<span class="comment">// Same as let - Temporal Dead Zone</span>
+<span class="comment">// Must be initialized at declaration</span></div>
+                </div>
+            </div>
+            
+            <div class="type-card function">
+                <h3>🟢 Function Declaration Hoisting</h3>
+                <div class="code-block">
+                    <div class="code"><span class="comment">// What you write:</span>
+<span class="function">sayHello</span>(); <span class="comment">// "Hello!" - Works!</span>
+
+<span class="keyword">function</span> <span class="function">sayHello</span>() {
+    console.log(<span class="string">"Hello!"</span>);
+}
+
+<span class="comment">// Completely hoisted with body</span></div>
+                </div>
+            </div>
+            
+            <div class="type-card arrow">
+                <h3>🟠 Arrow Function Hoisting</h3>
+                <div class="code-block">
+                    <div class="code"><span class="comment">// What you write:</span>
+<span class="function">sayHi</span>(); <span class="error">// TypeError: sayHi is not a function</span>
+
+<span class="keyword">var</span> <span class="function">sayHi</span> = <span class="keyword">=></span> {
+    console.log(<span class="string">"Hi!"</span>);
+};
+
+<span class="comment">// sayHi is hoisted as undefined</span></div>
+                </div>
+            </div>
+            
+            <div class="type-card arrow">
+                <h3>🟣 Function Expression (let/const)</h3>
+                <div class="code-block">
+                    <div class="code"><span class="comment">// What you write:</span>
+<span class="function">greet</span>(); <span class="error">// ReferenceError!</span>
+
+<span class="keyword">const</span> <span class="function">greet</span> = <span class="keyword">function</span>() {
+    console.log(<span class="string">"Greetings!"</span>);
+};
+
+<span class="comment">// In Temporal Dead Zone</span></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Interactive Demo -->
+        <div class="interactive-demo">
+            <div class="section-title">🎮 Interactive Hoisting Demo</div>
+            <div class="controls">
+                <button class="btn" onclick="runVarDemo()">Run var Demo</button>
+                <button class="btn" onclick="runLetDemo()">Run let Demo</button>
+                <button class="btn" onclick="runFunctionDemo()">Run Function Demo</button>
+                <button class="btn" onclick="runArrowDemo()">Run Arrow Function Demo</button>
+            </div>
+            <div id="demoOutput" class="output">Click a button above to see hoisting in action!</div>
+        </div>
+        
+        <!-- Real-world Examples -->
+        <div class="demo-grid">
+            <div class="demo-section">
+                <div class="section-title">⚠️ Common Hoisting Pitfalls</div>
+                <div class="code-block">
+                    <div class="code"><span class="comment">// Pitfall 1: var in loops</span>
+<span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i < <span class="number">3</span>; i++) {
+    setTimeout(<span class="keyword">=></span> console.log(i), <span class="number">100</span>); <span class="comment">// 3, 3, 3</span>
+}
+
+<span class="comment">// Fix with let:</span>
+<span class="keyword">for</span> (<span class="keyword">let</span> j = <span class="number">0</span>; j < <span class="number">3</span>; j++) {
+    setTimeout(<span class="keyword">=></span> console.log(j), <span class="number">100</span>); <span class="comment">// 0, 1, 2</span>
+}</div>
+                </div>
+            </div>
+            
+            <div class="demo-section">
+                <div class="section-title">✅ TypeScript Best Practices</div>
+                <div class="code-block">
+                    <div class="code"><span class="comment">// Good TypeScript practices:</span>
+
+<span class="comment">// 1. Use const/let instead of var</span>
+<span class="keyword">const</span> userName: <span class="keyword">string</span> = <span class="string">"John"</span>;
+<span class="keyword">let</span> userAge: <span class="keyword">number</span> = <span class="number">25</span>;
+
+<span class="comment">// 2. Declare functions before use</span>
+<span class="keyword">function</span> <span class="function">processUser</span>(name: <span class="keyword">string</span>): <span class="keyword">void</span> {
+    console.log(<span class="string">`Processing ${name}`</span>);
+}
+
+<span class="comment">// 3. Use arrow functions with proper typing</span>
+<span class="keyword">const</span> <span class="function">calculate</span>: (a: <span class="keyword">number</span>, b: <span class="keyword">number</span>) <span class="keyword">=></span> <span class="keyword">number</span> 
+    = (a, b) <span class="keyword">=></span> a + b;</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Advanced Example -->
+        <div class="demo-section" style="margin-top: 30px;">
+            <div class="section-title">🚀 Advanced Hoisting Example</div>
+            <div class="code-block">
+                <div class="code"><span class="comment">// Complex hoisting scenario in TypeScript</span>
+
+console.log(<span class="keyword">typeof</span> myFunction); <span class="comment">// "function"</span>
+console.log(<span class="keyword">typeof</span> myArrowFunc); <span class="comment">// "undefined"</span>
+console.log(<span class="keyword">typeof</span> myLetFunc); <span class="comment">// ReferenceError!</span>
+
+<span class="comment">// Function declaration - fully hoisted</span>
+<span class="keyword">function</span> <span class="function">myFunction</span>(): <span class="keyword">string</span> {
+    <span class="keyword">return</span> <span class="string">"I'm hoisted!"</span>;
+}
+
+<span class="comment">// var arrow function - hoisted as undefined</span>
+<span class="keyword">var</span> <span class="function">myArrowFunc</span>: () <span class="keyword">=></span> <span class="keyword">string</span> = () <span class="keyword">=></span> <span class="string">"Arrow function"</span>;
+
+<span class="comment">// let function - in Temporal Dead Zone</span>
+<span class="keyword">let</span> <span class="function">myLetFunc</span>: () <span class="keyword">=></span> <span class="keyword">string</span> = () <span class="keyword">=></span> <span class="string">"Let function"</span>;</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function runVarDemo() {
+            const output = document.getElementById('demoOutput');
+            output.className = 'output success';
+            output.textContent = `var Demo:
+            
+Step 1: console.log(x) // undefined (hoisted but not assigned)
+Step 2: var x = 5     // assignment happens
+Step 3: console.log(x) // 5
+
+Memory Phase: var x = undefined
+Execution Phase: x gets value 5`;
+        }
+        
+        function runLetDemo() {
+            const output = document.getElementById('demoOutput');
+            output.className = 'output error';
+            output.textContent = `let Demo:
+
+Step 1: console.log(y) // ReferenceError: Cannot access 'y' before initialization
+Step 2: let y = 10     // declaration and assignment
+
+Memory Phase: let y exists but is uninitialized (Temporal Dead Zone)
+Execution Phase: y gets value 10 only after this line`;
+        }
+        
+        function runFunctionDemo() {
+            const output = document.getElementById('demoOutput');
+            output.className = 'output success';
+            output.textContent = `Function Declaration Demo:
+
+Step 1: sayHello()     // "Hello World!" - Works perfectly!
+Step 2: function sayHello() { ... }
+
+Memory Phase: Complete function is stored in memory
+Execution Phase: Function is available from the start`;
+        }
+        
+        function runArrowDemo() {
+            const output = document.getElementById('demoOutput');
+            output.className = 'output error';
+            output.textContent = `Arrow Function Demo:
+
+Step 1: greet()        // TypeError: greet is not a function
+Step 2: var greet = () => { ... }
+
+Memory Phase: var greet = undefined
+Execution Phase: greet gets function value only after assignment`;
+        }
+    </script>
+</body>
+</html>
