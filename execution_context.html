@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JavaScript Execution & Call Stack</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .code-section {
+            background: #1e1e1e;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+        
+        .code-title {
+            color: #61dafb;
+            font-size: 18px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        
+        .code {
+            background: #2d2d2d;
+            padding: 15px;
+            border-radius: 8px;
+            color: #f8f8f2;
+            font-family: 'Courier New', monospace;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            font-size: 14px;
+            overflow-x: auto;
+        }
+        
+        .keyword { color: #ff79c6; }
+        .function { color: #50fa7b; }
+        .string { color: #f1fa8c; }
+        .comment { color: #6272a4; }
+        
+        .visualization {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        
+        .call-stack {
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            min-height: 300px;
+            position: relative;
+            background: #f8f9ff;
+        }
+        
+        .stack-title {
+            background: #667eea;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            font-weight: 600;
+            border-radius: 6px 6px 0 0;
+        }
+        
+        .stack-item {
+            background: #4c63d2;
+            color: white;
+            margin: 10px;
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: 500;
+            transform: translateY(0);
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        .execution-steps {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+        
+        .step {
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #667eea;
+            background: #f8f9ff;
+            border-radius: 0 8px 8px 0;
+            opacity: 0.3;
+            transition: all 0.3s ease;
+        }
+        
+        .step.active {
+            opacity: 1;
+            background: #e8f2ff;
+            transform: translateX(5px);
+        }
+        
+        .step-number {
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 0 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .phase-indicator {
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 8px;
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 JavaScript Execution & Call Stack</h1>
+            <p>Understanding how JavaScript code runs behind the scenes</p>
+        </div>
+        
+        <div class="phase-indicator" id="phaseIndicator">
+            Phase: Memory Creation Phase
+        </div>
+        
+        <div class="content">
+            <div class="code-section">
+                <div class="code-title">📝 TypeScript/JavaScript Code Example</div>
+                <div class="code" id="codeDisplay">
+<span class="comment">// Global Execution Context Example</span>
+<span class="keyword">var</span> a = <span class="string">2</span>;
+<span class="keyword">var</span> b = <span class="string">4</span>;
+
+<span class="keyword">function</span> <span class="function">add</span>(x: <span class="keyword">number</span>, y: <span class="keyword">number</span>): <span class="keyword">number</span> {
+    <span class="keyword">var</span> result = x + y;
+    <span class="keyword">return</span> result;
+}
+
+<span class="keyword">function</span> <span class="function">square</span>(num: <span class="keyword">number</span>): <span class="keyword">number</span> {
+    <span class="keyword">var</span> ans = <span class="function">add</span>(num, num);
+    <span class="keyword">return</span> ans;
+}
+
+<span class="keyword">var</span> result1 = <span class="function">add</span>(a, b);
+<span class="keyword">var</span> result2 = <span class="function">square</span>(<span class="string">5</span>);
+
+console.log(result1); <span class="comment">// 6</span>
+console.log(result2); <span class="comment">// 10</span>
+                </div>
+            </div>
+            
+            <div class="visualization">
+                <div class="code-title">📚 Call Stack Visualization</div>
+                <div class="call-stack" id="callStack">
+                    <div class="stack-title">Call Stack (LIFO)</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn" onclick="prevStep()" id="prevBtn">⬅️ Previous</button>
+            <button class="btn" onclick="nextStep()" id="nextBtn">Next Step ➡️</button>
+            <button class="btn" onclick="reset()">🔄 Reset</button>
+        </div>
+        
+        <div class="execution-steps">
+            <h3 style="margin-bottom: 20px; color: #667eea;">🔍 Execution Steps</h3>
+            <div class="step active" id="step0">
+                <div class="step-number">Step 1:</div>
+                <strong>Memory Creation Phase</strong> - JavaScript scans the code and allocates memory for variables and functions. Variables get 'undefined', functions get their complete code.
+            </div>
+            <div class="step" id="step1">
+                <div class="step-number">Step 2:</div>
+                <strong>Code Execution Phase Begins</strong> - Global Execution Context is created and pushed to Call Stack.
+            </div>
+            <div class="step" id="step2">
+                <div class="step-number">Step 3:</div>
+                <strong>Variable Assignment</strong> - a = 2, b = 4 are executed line by line.
+            </div>
+            <div class="step" id="step3">
+                <div class="step-number">Step 4:</div>
+                <strong>Function Call: add(a, b)</strong> - New execution context created for add() function and pushed to stack.
+            </div>
+            <div class="step" id="step4">
+                <div class="step-number">Step 5:</div>
+                <strong>Function Execution</strong> - add() function executes: result = 2 + 4 = 6, then returns.
+            </div>
+            <div class="step" id="step5">
+                <div class="step-number">Step 6:</div>
+                <strong>Function Complete</strong> - add() execution context is popped from stack, result1 = 6.
+            </div>
+            <div class="step" id="step6">
+                <div class="step-number">Step 7:</div>
+                <strong>Function Call: square(5)</strong> - New execution context for square() function pushed to stack.
+            </div>
+            <div class="step" id="step7">
+                <div class="step-number">Step 8:</div>
+                <strong>Nested Function Call</strong> - square() calls add(5, 5), new execution context for add() created.
+            </div>
+            <div class="step" id="step8">
+                <div class="step-number">Step 9:</div>
+                <strong>Nested Execution</strong> - add(5, 5) executes and returns 10, its context is popped.
+            </div>
+            <div class="step" id="step9">
+                <div class="step-number">Step 10:</div>
+                <strong>Function Complete</strong> - square() completes and returns 10, its context is popped.
+            </div>
+            <div class="step" id="step10">
+                <div class="step-number">Step 11:</div>
+                <strong>Final Output</strong> - console.log statements execute, showing results: 6 and 10.
+            </div>
+            <div class="step" id="step11">
+                <div class="step-number">Step 12:</div>
+                <strong>Program Complete</strong> - Global execution context is popped, call stack is empty, program ends.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 0;
+        const totalSteps = 12;
+        
+        const stackStates = [
+            [],
+            ['Global Execution Context'],
+            ['Global Execution Context'],
+            ['Global Execution Context'],
+            ['Global Execution Context', 'add(2, 4)'],
+            ['Global Execution Context', 'add(2, 4)'],
+            ['Global Execution Context'],
+            ['Global Execution Context', 'square(5)'],
+            ['Global Execution Context', 'square(5)', 'add(5, 5)'],
+            ['Global Execution Context', 'square(5)'],
+            ['Global Execution Context'],
+            ['Global Execution Context'],
+            []
+        ];
+        
+        const phases = [
+            'Memory Creation Phase',
+            'Code Execution Phase - Global Context',
+            'Variable Assignment Phase',
+            'Variable Assignment Complete',
+            'Function Call - add(2, 4)',
+            'Function Execution - add()',
+            'Function Return - add() complete',
+            'Function Call - square(5)',
+            'Nested Function Call - add(5, 5)',
+            'Nested Function Return',
+            'Function Return - square() complete',
+            'Output Phase',
+            'Program Complete'
+        ];
+        
+        function updateVisualization() {
+            // Update call stack
+            const callStack = document.getElementById('callStack');
+            const stackTitle = callStack.querySelector('.stack-title');
+            callStack.innerHTML = '';
+            callStack.appendChild(stackTitle);
+            
+            const currentStack = stackStates[currentStep];
+            currentStack.forEach((item, index) => {
+                const stackItem = document.createElement('div');
+                stackItem.className = 'stack-item';
+                stackItem.textContent = item;
+                stackItem.style.animationDelay = `${index * 0.1}s`;
+                callStack.appendChild(stackItem);
+            });
+            
+            // Update phase indicator
+            document.getElementById('phaseIndicator').textContent = `Phase: ${phases[currentStep]}`;
+            
+            // Update steps
+            for (let i = 0; i <= totalSteps; i++) {
+                const step = document.getElementById(`step${i}`);
+                if (step) {
+                    step.classList.toggle('active', i === currentStep);
+                }
+            }
+            
+            // Update buttons
+            document.getElementById('prevBtn').disabled = currentStep === 0;
+            document.getElementById('nextBtn').disabled = currentStep === totalSteps;
+        }
+        
+        function nextStep() {
+            if (currentStep < totalSteps) {
+                currentStep++;
+                updateVisualization();
+            }
+        }
+        
+        function prevStep() {
+            if (currentStep > 0) {
+                currentStep--;
+                updateVisualization();
+            }
+        }
+        
+        function reset() {
+            currentStep = 0;
+            updateVisualization();
+        }
+        
+        // Initialize
+        updateVisualization();
+        
+        // Auto-advance demo (optional)
+        let autoDemo;
+        function startAutoDemo() {
+            autoDemo = setInterval(() => {
+                if (currentStep < totalSteps) {
+                    nextStep();
+                } else {
+                    clearInterval(autoDemo);
+                }
+            }, 2000);
+        }
+        
+        // Uncomment to start auto demo
+        // setTimeout(startAutoDemo, 2000);
+    </script>
+</body>
+</html>
