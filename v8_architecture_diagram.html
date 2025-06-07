@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>V8 Engine Architecture</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .engine-container {
+            position: relative;
+            width: 100%;
+            height: 700px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            border: 2px solid #4ecdc4;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .component {
+            position: absolute;
+            border-radius: 10px;
+            padding: 15px;
+            font-weight: bold;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            backdrop-filter: blur(5px);
+        }
+
+        .component:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .parser {
+            top: 50px;
+            left: 50px;
+            width: 200px;
+            height: 80px;
+            background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+            border-color: #ff6b6b;
+        }
+
+        .ignition {
+            top: 200px;
+            left: 50px;
+            width: 200px;
+            height: 80px;
+            background: linear-gradient(135deg, #4ecdc4, #7fdbda);
+            border-color: #4ecdc4;
+        }
+
+        .turbofan {
+            top: 350px;
+            left: 50px;
+            width: 200px;
+            height: 80px;
+            background: linear-gradient(135deg, #45b7d1, #74c7e3);
+            border-color: #45b7d1;
+        }
+
+        .heap {
+            top: 50px;
+            right: 50px;
+            width: 250px;
+            height: 200px;
+            background: linear-gradient(135deg, #96ceb4, #b8e6c1);
+            border-color: #96ceb4;
+            color: #2c3e50;
+        }
+
+        .call-stack {
+            top: 300px;
+            right: 50px;
+            width: 250px;
+            height: 150px;
+            background: linear-gradient(135deg, #feca57, #ffd32a);
+            border-color: #feca57;
+            color: #2c3e50;
+        }
+
+        .event-loop {
+            bottom: 50px;
+            right: 50px;
+            width: 250px;
+            height: 100px;
+            background: linear-gradient(135deg, #ff9ff3, #f368e0);
+            border-color: #ff9ff3;
+        }
+
+        .gc {
+            bottom: 50px;
+            left: 50px;
+            width: 200px;
+            height: 80px;
+            background: linear-gradient(135deg, #a55eea, #c44569);
+            border-color: #a55eea;
+        }
+
+        .code-flow {
+            position: absolute;
+            top: 200px;
+            left: 300px;
+            right: 320px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px dashed #ffffff;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: #ffffff;
+        }
+
+        .data-flow {
+            position: absolute;
+            width: 4px;
+            background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1);
+            border-radius: 2px;
+            animation: flow 3s infinite;
+        }
+
+        @keyframes flow {
+            0% { opacity: 0; transform: scale(0); }
+            50% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(0); }
+        }
+
+        .flow-1 {
+            top: 90px;
+            left: 250px;
+            width: 50px;
+            height: 4px;
+            animation-delay: 0s;
+        }
+
+        .flow-2 {
+            top: 240px;
+            left: 250px;
+            width: 50px;
+            height: 4px;
+            animation-delay: 0.5s;
+        }
+
+        .flow-3 {
+            top: 390px;
+            left: 250px;
+            width: 50px;
+            height: 4px;
+            animation-delay: 1s;
+        }
+
+        .flow-4 {
+            top: 150px;
+            right: 300px;
+            width: 4px;
+            height: 50px;
+            animation-delay: 1.5s;
+        }
+
+        .flow-5 {
+            top: 375px;
+            right: 300px;
+            width: 4px;
+            height: 50px;
+            animation-delay: 2s;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 25px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .info-panel {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .info-panel h3 {
+            color: #4ecdc4;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .info-panel p {
+            line-height: 1.6;
+            margin-bottom: 10px;
+            color: #e0e0e0;
+        }
+
+        .phase-indicator {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #4ecdc4;
+            border: 2px solid #4ecdc4;
+        }
+
+        .highlight {
+            box-shadow: 0 0 30px rgba(78, 205, 196, 0.8) !important;
+            border-color: #4ecdc4 !important;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 30px rgba(78, 205, 196, 0.8); }
+            50% { box-shadow: 0 0 50px rgba(78, 205, 196, 1); }
+            100% { box-shadow: 0 0 30px rgba(78, 205, 196, 0.8); }
+        }
+
+        .execution-trace {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            font-family: 'Monaco', monospace;
+            font-size: 0.9rem;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+
+        @media (max-width: 768px) {
+            .engine-container {
+                height: 500px;
+            }
+            
+            .component {
+                font-size: 0.8rem;
+                padding: 10px;
+            }
+            
+            .parser, .ignition, .turbofan, .gc {
+                width: 120px;
+                height: 60px;
+            }
+            
+            .heap, .call-stack, .event-loop {
+                width: 150px;
+                height: 80px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Google V8 JavaScript Engine Architecture</h1>
+        
+        <div class="controls">
+            <button class="btn" onclick="startExecution()">▶️ Start Execution</button>
+            <button class="btn" onclick="pauseExecution()">⏸️ Pause</button>
+            <button class="btn" onclick="resetExecution()">🔄 Reset</button>
+        </div>
+
+        <div class="engine-container">
+            <div class="phase-indicator" id="phaseIndicator">Ready to Execute</div>
+            
+            <div class="component parser" id="parser">
+                <div>📝 Parser</div>
+                <div style="font-size: 0.8rem; margin-top: 5px;">Lexical Analysis<br>Syntax Analysis</div>
+            </div>
+            
+            <div class="component ignition" id="ignition">
+                <div>🔥 Ignition</div>
+                <div style="font-size: 0.8rem; margin-top: 5px;">Interpreter<br>Bytecode Generator</div>
+            </div>
+            
+            <div class="component turbofan" id="turbofan">
+                <div>💨 TurboFan</div>
+                <div style="font-size: 0.8rem; margin-top: 5px;">Optimizing Compiler<br>Machine Code</div>
+            </div>
+            
+            <div class="component heap" id="heap">
+                <div>🗄️ Memory Heap</div>
+                <div style="font-size: 0.8rem; margin-top: 10px;">
+                    Young Generation<br>
+                    Old Generation<br>
+                    Large Objects
+                </div>
+            </div>
+            
+            <div class="component call-stack" id="callStack">
+                <div>📚 Call Stack</div>
+                <div style="font-size: 0.8rem; margin-top: 10px;">
+                    Execution Contexts<br>
+                    Function Calls<br>
+                    Variable Scopes
+                </div>
+            </div>
+            
+            <div class="component event-loop" id="eventLoop">
+                <div>🔄 Event Loop</div>
+                <div style="font-size: 0.8rem; margin-top: 5px;">Callback Queue<br>Microtask Queue</div>
+            </div>
+            
+            <div class="component gc" id="gc">
+                <div>🧹 Garbage Collector</div>
+                <div style="font-size: 0.8rem; margin-top: 5px;">Mark & Sweep<br>Scavenge</div>
+            </div>
+            
+            <div class="code-flow">
+                <div>JavaScript Code Execution Flow</div>
+            </div>
+            
+            <div class="data-flow flow-1" id="flow1"></div>
+            <div class="data-flow flow-2" id="flow2"></div>
+            <div class="data-flow flow-3" id="flow3"></div>
+            <div class="data-flow flow-4" id="flow4"></div>
+            <div class="data-flow flow-5" id="flow5"></div>
+            
+            <div class="execution-trace" id="executionTrace">
+                > Ready to trace JavaScript execution...
+            </div>
+        </div>
+
+        <div class="info-panel" id="infoPanel">
+            <h3>🏗️ V8 Engine Overview</h3>
+            <p>Google's V8 is a high-performance JavaScript engine that powers Chrome and Node.js. It compiles JavaScript directly to machine code for optimal performance.</p>
+            <p><strong>Key Components:</strong></p>
+            <p>• <strong>Parser:</strong> Converts JavaScript source code into an Abstract Syntax Tree (AST)</p>
+            <p>• <strong>Ignition:</strong> Interpreter that generates and executes bytecode</p>
+            <p>• <strong>TurboFan:</strong> Optimizing compiler that generates highly optimized machine code</p>
+            <p>• <strong>Memory Heap:</strong> Manages object allocation and storage</p>
+            <p>• <strong>Call Stack:</strong> Tracks function execution and variable scopes</p>
+            <p>• <strong>Event Loop:</strong> Handles asynchronous operations and callbacks</p>
+            <p>• <strong>Garbage Collector:</strong> Automatically manages memory cleanup</p>
+        </div>
+    </div>
+
+    <script>
+        let executionPhase = 0;
+        let isExecuting = false;
+        let executionInterval;
+        
+        const phases = [
+            {
+                name: "Parsing Phase",
+                component: "parser",
+                description: "Parsing JavaScript source code into AST",
+                trace: "> Lexical analysis: Tokenizing source code...\n> Syntax analysis: Building Abstract Syntax Tree...\n> AST generated successfully"
+            },
+            {
+                name: "Bytecode Generation",
+                component: "ignition",
+                description: "Ignition interpreter generating bytecode",
+                trace: "> Generating bytecode from AST...\n> Optimizing bytecode for interpretation...\n> Bytecode ready for execution"
+            },
+            {
+                name: "Execution Phase",
+                component: "callStack",
+                description: "Executing code on the call stack",
+                trace: "> Creating execution context...\n> Executing bytecode instructions...\n> Managing variable scopes and closures"
+            },
+            {
+                name: "Memory Allocation",
+                component: "heap",
+                description: "Allocating objects in memory heap",
+                trace: "> Allocating objects in young generation...\n> Managing memory regions...\n> Tracking object references"
+            },
+            {
+                name: "Optimization",
+                component: "turbofan",
+                description: "TurboFan optimizing hot code paths",
+                trace: "> Profiling code execution patterns...\n> Identifying optimization opportunities...\n> Generating optimized machine code"
+            },
+            {
+                name: "Async Handling",
+                component: "eventLoop",
+                description: "Event loop processing async operations",
+                trace: "> Processing callback queue...\n> Handling microtasks...\n> Managing async operations"
+            },
+            {
+                name: "Garbage Collection",
+                component: "gc",
+                description: "Cleaning up unused memory",
+                trace: "> Marking reachable objects...\n> Sweeping unreachable objects...\n> Compacting memory regions"
+            }
+        ];
+        
+        function startExecution() {
+            if (isExecuting) return;
+            
+            isExecuting = true;
+            executionPhase = 0;
+            
+            executionInterval = setInterval(() => {
+                if (executionPhase >= phases.length) {
+                    resetExecution();
+                    return;
+                }
+                
+                executePhase(executionPhase);
+                executionPhase++;
+            }, 2000);
+        }
+        
+        function pauseExecution() {
+            isExecuting = false;
+            clearInterval(executionInterval);
+        }
+        
+        function resetExecution() {
+            isExecuting = false;
+            executionPhase = 0;
+            clearInterval(executionInterval);
+            
+            // Remove all highlights
+            document.querySelectorAll('.component').forEach(comp => {
+                comp.classList.remove('highlight');
+            });
+            
+            document.getElementById('phaseIndicator').textContent = 'Ready to Execute';
+            document.getElementById('executionTrace').textContent = '> Ready to trace JavaScript execution...';
+        }
+        
+        function executePhase(phaseIndex) {
+            const phase = phases[phaseIndex];
+            
+            // Remove previous highlights
+            document.querySelectorAll('.component').forEach(comp => {
+                comp.classList.remove('highlight');
+            });
+            
+            // Highlight current component
+            document.getElementById(phase.component).classList.add('highlight');
+            
+            // Update phase indicator
+            document.getElementById('phaseIndicator').textContent = phase.name;
+            
+            // Update execution trace
+            document.getElementById('executionTrace').textContent = phase.trace;
+            
+            // Update info panel
+            updateInfoPanel(phase);
+        }
+        
+        function updateInfoPanel(phase) {
+            const infoPanel = document.getElementById('infoPanel');
+            infoPanel.innerHTML = `
+                <h3>🔍 Current Phase: ${phase.name}</h3>
+                <p><strong>Description:</strong> ${phase.description}</p>
+                <p><strong>What's happening:</strong></p>
+                <p>${phase.trace.replace(/\n>/g, '<br>•').replace('>', '•')}</p>
+            `;
+        }
+        
+        // Add click handlers for components
+        document.querySelectorAll('.component').forEach(component => {
+            component.addEventListener('click', function() {
+                const componentId = this.id;
+                showComponentDetails(componentId);
+            });
+        });
+        
+        function showComponentDetails(componentId) {
+            const details = {
+                parser: {
+                    title: "📝 Parser",
+                    content: "The Parser is responsible for analyzing JavaScript source code and converting it into an Abstract Syntax Tree (AST). It performs lexical analysis (tokenization) and syntax analysis to understand the code structure."
+                },
+                ignition: {
+                    title: "🔥 Ignition Interpreter",
+                    content: "Ignition is V8's interpreter that converts the AST into bytecode. It provides fast startup times and low memory overhead. The bytecode is then executed directly by the interpreter."
+                },
+                turbofan: {
+                    title: "💨 TurboFan Compiler",
+                    content: "TurboFan is V8's optimizing compiler that takes frequently executed ('hot') code and compiles it to highly optimized machine code. It uses type feedback and speculative optimization techniques."
+                },
+                heap: {
+                    title: "🗄️ Memory Heap",
+                    content: "The heap is where V8 stores objects and variables. It's divided into young generation (new objects) and old generation (long-lived objects). The heap is managed by the garbage collector."
+                },
+                callStack: {
+                    title: "📚 Call Stack",
+                    content: "The call stack manages function execution contexts. Each function call creates a new stack frame containing local variables, parameters, and return addresses. JavaScript is single-threaded with one call stack."
+                },
+                eventLoop: {
+                    title: "🔄 Event Loop",
+                    content: "The event loop enables asynchronous programming in JavaScript. It manages the callback queue, microtask queue, and coordinates between the call stack and web APIs."
+                },
+                gc: {
+                    title: "🧹 Garbage Collector",
+                    content: "V8's garbage collector automatically manages memory by finding and freeing objects that are no longer reachable. It uses generational collection with different strategies for young and old objects."
+                }
+            };
+            
+            const detail = details[componentId];
+            if (detail) {
+                updateInfoPanel({
+                    name: detail.title,
+                    description: detail.content,
+                    trace: "Click 'Start Execution' to see this component in action!"
+                });
+            }
+        }
+        
+        // Auto-start a demo after page load
+        setTimeout(() => {
+            if (!isExecuting) {
+                startExecution();
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
